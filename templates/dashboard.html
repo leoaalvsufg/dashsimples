@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Notas Fiscais</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <!-- Estilos customizados -->
+
+        <!-- DataTables CSS -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.css">
+
+    <!-- jQuery Library -->
+    <script type="text/javascript" charset="utf8" src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+
+    <!-- DataTables JS -->
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.js"></script>
+
+    <style>
+        body {
+            background-color: #f4f4f4;
+        }
+        .dashboard-header {
+            background-color: #3d3f41;
+            color: white;
+            padding: 10px 15px;
+        }
+        .card {
+            margin: 15px 0;
+        }
+        .card-header {
+            background-color: #838485;
+            color: white;
+        }
+        .card-body {
+            background-color: #fff;
+        }
+        #grafico-notas-fiscais, #grafico-pedidos-comprador {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard-header">
+    <h2>Dashboard de Gerenciamento de dados </h2>
+</div>
+<div class="container">
+    <!-- Combos de Seleção de Data -->
+    <div class="row">
+        <div class="col-md-4">
+            <label for="dataInicio">Data de Início:</label>
+            <select id="dataInicio" class="form-control">
+                <!-- Opções de data de início serão adicionadas aqui -->
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label for="dataFim">Data de Fim:</label>
+            <select id="dataFim" class="form-control">
+                <!-- Opções de data de fim serão adicionadas aqui -->
+            </select>
+        </div>
+        <div class="col-md-4">
+            <button id="btnFiltrar" class="btn btn-primary" style="margin-top: 30px;">Filtrar</button>
+        </div>
+    </div>
+</div>
+<div class="container-fluid">
+    <div class="row">
+        <!-- Coluna do Gráfico de Barras -->
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    Número de Notas Fiscais Devolvidas por Dia
+                </div>
+                <div class="card-body">
+                    <div id="grafico-notas-fiscais"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="col-md-12">
+    <div class="card">
+        <div class="card-header">
+            Quantidade de Pedidos por Comprador
+        </div>
+        <div class="card-body">
+            <div id="grafico-pedidos-comprador"></div>
+        </div>
+    </div>
+</div>
+<div class="card">
+    <div class="card-header">
+        Ocorrências por Comprador / planilha de dados 
+    </div>
+</div>
+<div class="col-md-4">
+    <label for="compradorSelect">Comprador:</label>
+      <select id="compradorSelect" class="form-control">
+        <!-- Opções de compradores serão adicionadas aqui -->
+    </select>
+    
+</div>
+<div class="row">
+
+    
+      <div class="card-body">
+        <table class="table" id="tabela-ocorrencias-comprador">
+            <thead>
+                <tr>
+                    <th>Comprador</th>
+                    <th>Quantidade de Ocorrências</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Os dados das ocorrências por comprador serão inseridos aqui -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+
+<div class="row">
+    <div class="col-md-12">
+        <table class="table" id="tabela-dados">
+            <thead>
+                <tr>
+                    <th>LOJA</th>
+                    <th>DATA</th>
+                    <th>NOTA FISCAL</th>
+                    <th>SEQ FORNECEDOR</th>
+                    <th>FORNECEDOR</th>
+                    <th>COMPRADOR</th>
+                    <th>MOTIVO DA DEVOLUÇÃO</th>
+                    <th>AUTORIZADO POR</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Os dados filtrados serão inseridos aqui -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function inicializarDashboard() {
+        preencherDatas();
+        preencherCompradores();
+        atualizarGraficos();
+        configurarTabela();
+    }
+    function configurarTabela() {
+    $(document).ready(function() {
+        $('#tabela-dados').DataTable({
+            "language": {
+                "url": "//cdn.datatables.net/plug-ins/1.10.21/i18n/Portuguese-Brasil.json"
+            }
+        });
+    });
+}
+
+window.onload = inicializarDashboard;
+    
+    function preencherDatas() {
+        fetch('/get-datas')
+            .then(response => response.json())
+            .then(datas => {
+                var selectInicio = document.getElementById('dataInicio');
+                var selectFim = document.getElementById('dataFim');
+    
+                datas.forEach(data => {
+                    var optionInicio = new Option(data, data);
+                    var optionFim = new Option(data, data);
+                    selectInicio.appendChild(optionInicio);
+                    selectFim.appendChild(optionFim);
+                });
+            });
+    }
+    
+    function preencherCompradores() {
+        fetch('/get-compradores-unicos')
+            .then(response => response.json())
+            .then(compradores => {
+                var selectComprador = document.getElementById('compradorSelect');
+                compradores.forEach(comprador => {
+                    var option = new Option(comprador, comprador);
+                    selectComprador.appendChild(option);
+                });
+            });
+    }
+    
+    function atualizarGraficos(dataInicio, dataFim) {
+        var url = '/data';
+        if (dataInicio && dataFim) {
+            url += `?dataInicio=${dataInicio}&dataFim=${dataFim}`;
+        }
+    
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                var figData = JSON.parse(data);
+                Plotly.newPlot('grafico-notas-fiscais', figData.data, figData.layout);
+            });
+    
+        var urlComprador = '/data-comprador';
+        if (dataInicio && dataFim) {
+            urlComprador += `?dataInicio=${dataInicio}&dataFim=${dataFim}`;
+        }
+    
+        fetch(urlComprador)
+            .then(response => response.json())
+            .then(data => {
+                var figDataComprador = JSON.parse(data);
+                Plotly.newPlot('grafico-pedidos-comprador', figDataComprador.data, figDataComprador.layout);
+            });
+    }
+    
+    document.getElementById('btnFiltrar').addEventListener('click', function() {
+        var dataInicio = document.getElementById('dataInicio').value;
+        var dataFim = document.getElementById('dataFim').value;
+        atualizarGraficos(dataInicio, dataFim);
+    });
+    
+    document.getElementById('compradorSelect').addEventListener('change', function() {
+    var compradorSelecionado = this.value;
+    var dataInicio = document.getElementById('dataInicio').value; // Obtem a data de inicio
+    var dataFim = document.getElementById('dataFim').value; // Obtem a data de fim
+
+    // Constrói a URL com os parâmetros de consulta
+    var url = new URL('/get-dados-comprador', window.location.origin);
+    var params = { comprador: compradorSelecionado, dataInicio: dataInicio, dataFim: dataFim };
+    url.search = new URLSearchParams(params).toString();
+
+    fetch(url)
+        .then(response => response.json())
+        .then(dados => {
+            var tbody = document.getElementById('tabela-dados').getElementsByTagName('tbody')[0];
+            tbody.innerHTML = ''; // Limpar a tabela existente
+
+            dados.forEach(item => {
+                var row = tbody.insertRow();
+                Object.keys(item).forEach(key => {
+                    var cell = row.insertCell();
+                    cell.textContent = item[key];
+                });
+            });
+        });
+});
+
+    window.onload = inicializarDashboard;
+
+    function atualizarTabelaResumo(dataInicio, dataFim, compradorSelecionado) {
+    var url = '/get-retorno-fornecedor';
+    var params = new URLSearchParams();
+    if (dataInicio) params.append('dataInicio', dataInicio);
+    if (dataFim) params.append('dataFim', dataFim);
+    if (compradorSelecionado) params.append('comprador', compradorSelecionado);
+    fetch(`${url}?${params.toString()}`)
+        .then(response => response.json())
+        .then(dados => {
+            var tbody = document.getElementById('tabela-retorno-fornecedor').getElementsByTagName('tbody')[0];
+            tbody.innerHTML = '';  // Limpar a tabela existente
+            dados.forEach(item => {
+                var row = tbody.insertRow();
+                var cellFornecedor = row.insertCell();
+                cellFornecedor.textContent = item['Retorno do Fornecedor'];
+                var cellOcorrencias = row.insertCell();
+                cellOcorrencias.textContent = item['Quantidade de Ocorrências'];
+            });
+        });
+}
+
+function carregarDadosIndicador(compradorSelecionado, dataInicio, dataFim) {
+    var url = `/get-ocorrencias-comprador?comprador=${compradorSelecionado}`;
+    if (dataInicio && dataFim) {
+        url += `&dataInicio=${dataInicio}&dataFim=${dataFim}`;
+    }
+
+    fetch(url)
+        .then(response => response.json())
+        .then(dados => {
+            var tbody = document.getElementById('tabela-ocorrencias').getElementsByTagName('tbody')[0];
+            tbody.innerHTML = '';  // Limpar a tabela existente
+
+            dados.forEach(item => {
+                var row = tbody.insertRow();
+                var cellRetorno = row.insertCell(0);
+                cellRetorno.textContent = item['Retorno do Fornecedor'];
+                var cellQuantidade = row.insertCell(1);
+                cellQuantidade.textContent = item['Quantidade de Ocorrências'];
+            });
+        });
+}
+
+// Atualizar o indicador junto com os gráficos
+function atualizarGraficosEIndicador(dataInicio, dataFim) {
+    var compradorSelecionado = document.getElementById('compradorSelect').value;
+    atualizarGraficos(dataInicio, dataFim);
+    carregarDadosIndicador(compradorSelecionado, dataInicio, dataFim);
+}
+
+function carregarOcorrenciasPorComprador(compradorSelecionado, dataInicio, dataFim) {
+    var url = '/get-ocorrencias-por-motivo';
+    var params = new URLSearchParams();
+
+    // Inclua o comprador selecionado no parâmetro, se ele existir
+    if (compradorSelecionado) {
+        params.append('comprador', compradorSelecionado);
+    }
+
+    // Inclua as datas de início e fim nos parâmetros, se eles existirem
+    if (dataInicio) {
+        params.append('dataInicio', dataInicio);
+    }
+    if (dataFim) {
+        params.append('dataFim', dataFim);
+    }
+
+    // Adicione os parâmetros à URL
+    url += `?${params.toString()}`;
+
+    fetch(url)
+        .then(response => response.json())
+        .then(ocorrencias => {
+            var tbody = document.getElementById('tabela-ocorrencias-comprador').getElementsByTagName('tbody')[0];
+            tbody.innerHTML = ''; // Limpar a tabela existente
+
+            ocorrencias.forEach(ocorrencia => {
+                var row = tbody.insertRow();
+                var cellMotivo = row.insertCell(0);
+                cellMotivo.textContent = ocorrencia['MOTIVO DA DEVOLUÇÃO'];
+                var cellQuantidade = row.insertCell(1);
+                cellQuantidade.textContent = ocorrencia['Quantidade de Ocorrências'];
+            });
+        });
+}
+
+
+document.getElementById('compradorSelect').addEventListener('change', function() {
+    var compradorSelecionado = this.value;
+    var dataInicio = document.getElementById('dataInicio').value;
+    var dataFim = document.getElementById('dataFim').value;
+    //carregarDadosComprador(compradorSelecionado);
+    carregarOcorrenciasPorComprador(compradorSelecionado, dataInicio, dataFim);
+});
+
+document.getElementById('btnFiltrar').addEventListener('click', function() {
+    var compradorSelecionado = document.getElementById('compradorSelect').value;
+    var dataInicio = document.getElementById('dataInicio').value;
+    var dataFim = document.getElementById('dataFim').value;
+    
+    carregarOcorrenciasPorComprador(compradorSelecionado, dataInicio, dataFim);
+    atualizarDataTable(dataInicio, dataFim);
+   // carregarDadosFiltrados(dataInicio, dataFim);
+});
+
+function carregarDadosFiltrados(dataInicio, dataFim) {
+    // Construa a URL com os parâmetros de consulta
+    var url = new URL('/get-dados-filtrados', window.location.origin);
+    var params = { dataInicio: dataInicio, dataFim: dataFim };
+    url.search = new URLSearchParams(params).toString();
+
+   // fetch(url)
+   //     .then(response => response.json())
+    //    .then(dados => {
+    //        // Atualize a tabela aqui
+    //    });
+    fetch(url)
+        .then(response => response.json())
+        .then(dadosFiltrados => {
+            if ($.fn.DataTable.isDataTable('#tabela-dados')) {
+                $('#tabela-dados').DataTable().clear().destroy();
+            }
+            $('#tabela-dados').DataTable({
+                data: dadosFiltrados,
+                columns: [
+                    { data: 'LOJA' },
+                    { data: 'DATA' },
+                    { data: 'NOTA FISCAL' },
+                    { data: 'SEQ FORNECEDOR' },                                
+                    { data: 'FORNECEDOR' },
+                    { data: 'COMPRADOR' },         // aos nomes das propriedades dos objetos no array de dados
+                    { data: 'MOTIVO DA DEVOLUÇÃO' },
+                    { data: 'AUTORIZADO POR' } 
+                ],
+                destroy: true, // Use destroy: true para reinicializar sem verificar
+                language: {
+                    url: "//cdn.datatables.net/plug-ins/1.10.21/i18n/Portuguese-Brasil.json"
+                }
+            });
+        });
+}
+
+function atualizarDataTable(dataInicio, dataFim) {
+    var url = '/get-dados-filtrados'; // 
+    var params = { dataInicio: dataInicio, dataFim: dataFim };
+    url += `?${new URLSearchParams(params)}`;
+
+    fetch(url)
+        .then(response => response.json())
+        .then(dadosFiltrados => {
+            if ($.fn.DataTable.isDataTable('#tabela-dados')) {
+                $('#tabela-dados').DataTable().clear().destroy();
+            }
+            $('#tabela-dados').DataTable({
+                data: dadosFiltrados,
+                columns: [
+                    { data: 'LOJA' },
+                    { data: 'DATA' },
+                    { data: 'NOTA FISCAL' },
+                    { data: 'SEQ FORNECEDOR' },                                
+                    { data: 'FORNECEDOR' },
+                    { data: 'COMPRADOR' },         // aos nomes das propriedades dos objetos no array de dados
+                    { data: 'MOTIVO DA DEVOLUÇÃO' },
+                    { data: 'AUTORIZADO POR' }    // Certifique-se de que estes campos correspondem        
+                ],
+                destroy: true, // Use destroy: true para reinicializar sem verificar
+                language: {
+                    url: "//cdn.datatables.net/plug-ins/1.10.21/i18n/Portuguese-Brasil.json"
+                }
+            });
+        });
+}
+
+document.getElementById('btnFiltrar').addEventListener('click', function() {
+    var dataInicio = document.getElementById('dataInicio').value;
+    var dataFim = document.getElementById('dataFim').value;
+    atualizarDataTable(dataInicio, dataFim);
+});
+// Certifique-se de chamar esta função com os dados filtrados após receber a resposta do fetch
+
+    </script>
+
+<!-- Bootstrap JS, Popper.js, and jQuery -->
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+</body>
+</html>
